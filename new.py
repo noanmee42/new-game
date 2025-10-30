@@ -10,24 +10,29 @@ class Player(arcade.Sprite):
         self.center_x = SCREEN_WIDTH / 2
         self.center_y = SCREEN_HEIGHT / 2
         self.speed = 5
+    def reset(self):
+        self.center_x = SCREEN_WIDTH / 2
+        self.center_y = SCREEN_HEIGHT / 2
+        self.change_x = 0
+        self.change_y = 0
 
 class MyGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, "New Gamee")
         self.background = arcade.load_texture(":resources:images/backgrounds/abstract_2.jpg")
         self.background_color = arcade.color.AMAZON
-        
+        self.score = 0
         self.player = Player()
         self.player_list = arcade.SpriteList()
         self.player_list.append(self.player)
 
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
-        self.crystals_list = arcade.SpriteList(use_spatial_hash=True)
+        self.gem_list = arcade.SpriteList(use_spatial_hash=True)
         self.spikes_list = arcade.SpriteList(use_spatial_hash=True)
 
         self.create_walls()
         self.create_spikes()
-        #self.create_crystals()
+        self.create_gems()
     def create_walls(self):
     
         walls_position = [(SCREEN_WIDTH / 2 - 125, -30), (SCREEN_WIDTH / 2 - 250, -30), (25, -30), (SCREEN_WIDTH / 2, -30), (SCREEN_WIDTH / 2 + 125, -30), (SCREEN_WIDTH / 2 + 250, -30), (SCREEN_WIDTH - 25, -30), 
@@ -42,25 +47,49 @@ class MyGame(arcade.Window):
             self.wall_list.append(wall)
     
     def create_spikes(self):
-        spikes_position = [(90, 450),
-        (450, 100),
-                      (200, 300),
-                      (280,350),
-                      (300,550),
-                      (550,350),
-                      (650,460),
-                      (600,280),
-                      (750,350),
-                      (400,200),
+        spikes_position1 = [(90, 450),
+        #(450, 100),
+         #             (200, 300),
+          #            (280,350),
+           #           (300,550),
+            #          (550,350),
+             #         (650,460),
+              #        (600,280),
+               #       (750,350),
+                #      (400,200),
                       (350,280)]
-        for x,y in spikes_position:
+        for x,y in spikes_position1:
             spike = arcade.Sprite(":resources:/images/tiles/spikes.png", 0.8)
             spike.center_x = x
             spike.center_y = y
             self.spikes_list.append(spike)
 
-    #def reset(self):
+    def create_gems(self):
+        for i in range(20):
+            gem = arcade.Sprite(":resources:images/items/coinGold.png", 0.5)
+            gem.center_x = random.randint(50, SCREEN_WIDTH - 50)
+            gem.center_y = random.randint(50, SCREEN_HEIGHT - 50)
 
+            if not (arcade.check_for_collision_with_list(gem, self.wall_list) and arcade.check_for_collision_with_list(gem, self.spikes_list)):
+                self.gem_list.append(gem)
+    #def reset(self):
+    def reset(self):
+        self.score = 0
+        self.player.reset()
+
+        for gem in self.gem_list:
+            gem.remove_from_sprite_lists()
+            self.create_gems()
+
+    def nextlvl(self):
+        self.reset()
+        #self.enemy
+        self.spikes_list = arcade.SpriteList()
+        self.gem_list = arcade.SpriteList()
+        self.spikes_list = arcade.SpriteList()
+
+        self.create_gems()
+        self.create_spikes()
 
     def on_draw(self):
         self.clear()
@@ -75,6 +104,19 @@ class MyGame(arcade.Window):
         self.player.center_x += self.player.change_x
         self.player.center_y += self.player.change_y
 
+        arcade.draw_text(
+            f"Счёт: {self.score}",
+            10, SCREEN_HEIGHT - 30,
+            arcade.color.PRUSSIAN_BLUE, 55
+        )
+        if self.score == 20:
+            arcade.draw_text(
+            "ПОБЕДАЭ",
+            SCREEN_WIDTH, SCREEN_HEIGHT,
+            arcade.color.BLACK, 55
+        )
+            arcade.play_sound(arcade.load_sound(":resources:sounds/coin5.wav"))
+
         wall_hit = arcade.check_for_collision_with_list(self.player, self.wall_list)
         for wall in wall_hit:
             if self.player.change_y > 0:
@@ -87,7 +129,15 @@ class MyGame(arcade.Window):
                 self.player.left = wall.right
         
         spikes_hit = arcade.check_for_collision_with_list(self.player, self.spikes_list)
-        #for spike in spikes_hit:
+        for spike in spikes_hit:
+            self.reset()
+            arcade.play_sound(arcade.load_sound(":resources:sounds/coin4.wav"))
+
+        gem_hit = arcade.check_for_collision_with_list(self.player, self.coins_list)
+        for gem in gem_hit:
+            gem.remove_from_sprite_lists()
+            self.score += 1
+            arcade.play_sound(arcade.load_sound(":resources:sounds/coin1.wav"))
 
     def on_key_press(self, key, modifiers):
         match key:
